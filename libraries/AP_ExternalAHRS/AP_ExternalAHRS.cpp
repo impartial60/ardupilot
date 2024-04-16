@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),
-    
+
     AP_GROUPEND
 };
 
@@ -279,6 +279,13 @@ void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
     if (backend) {
         backend->send_status_report(link);
+    }
+}
+
+void AP_ExternalAHRS::write_bytes(const char *bytes, uint8_t len)
+{
+    if (backend) {
+        backend->write_bytes(bytes, len);
     }
 }
 

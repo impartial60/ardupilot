@@ -266,7 +266,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::ACCEL_DATA_HR: {
             CHECK_SIZE(u.accel_data_hr);
-            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*9.8106f*1.0e-6; // m/s/s    
+            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*9.8106f*1.0e-6; // m/s/s
             break;
         }
         case MessageType::GYRO_DATA_HR: {
@@ -519,7 +519,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             }
             last_gps_ms = now_ms;
         }
-        
+
         uint64_t now_us = AP_HAL::micros64();
 
         // @LoggerMessage: ILB4
@@ -588,7 +588,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
                                     nav_ins_data.hdop, nav_ins_data.vdop, gnss_data.tdop);
 
     }
-    
+
     if (GOT_MSG(BARO_DATA) &&
         GOT_MSG(TEMPERATURE)) {
         AP::baro().handle_external(baro_data);
@@ -678,7 +678,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: Lng: longitude
         // @Field: Alt: altitude MSL
         // @Field: USW: USW1
-        // @Field: USW2: USW2  
+        // @Field: USW2: USW2
         // @Field: Vdc: Supply voltage
 
         AP::logger().WriteStreaming("ILB7", "TimeUS,GMS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lng,Alt,USW,USW2,Vdc",
@@ -1123,8 +1123,13 @@ void AP_ExternalAHRS_InertialLabs::send_status_report(GCS_MAVLINK &link) const
     if (!filterStatus.flags.initalized) {
         flags |= EKF_UNINITIALIZED;
     }
-    
+
     mavlink_msg_ekf_status_report_send(link.get_chan(), flags, 0, 0, 0, 0, 0, 0);
+}
+
+void AP_ExternalAHRS_InertialLabs::write_bytes(const char *bytes, uint8_t len)
+{
+    uart->write(reinterpret_cast<const uint8_t *>(bytes), len);
 }
 
 #endif  // AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
