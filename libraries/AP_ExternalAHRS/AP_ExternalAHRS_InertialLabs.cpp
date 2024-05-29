@@ -1157,17 +1157,42 @@ void AP_ExternalAHRS_InertialLabs::send_status_report(GCS_MAVLINK &link) const
 }
 
 
-uint16_t AP_ExternalAHRS_InertialLabs::make_tx_packet(uint8_t *packet) const //AVK 15.05.2024
+void AP_ExternalAHRS_InertialLabs::make_tx_packet(uint8_t *packet) const //AVK 28.05.2024
 {
+    static int div = 0;
+uint8_t *tmp_ptr = packet;
+uint8_t hdr[] = {0xAA,0x55,0x01,0x62}; //packet header
+uint32_t tmp;
+float press ;
+uint16_t len_packet = 4/*header*/ + 2/*length packet*/ + 1/*num meass*/ + 1/*type*/ + \
+                    sizeof(uint32_t/*absolute pressure*/) + \
+                    sizeof(int32_t)/*differential pressure*/ + \
+                    sizeof(uint16_t)/*KS*/;
+  if(!(div & 3)) {       // 200 hz / 4 = 50 hz send packet to ILab     
+memcpy(tmp_ptr,hdr,sizeof(hdr)); // header
+tmp_ptr += sizeof(hdr);
+memcpy(tmp_ptr,&len_packet,sizeof(len_packet));
+tmp_ptr += sizeof(len_packet);
+*tmp_ptr++ = 0x01;
+*tmp_ptr++ = 0x12;
+press = AP::baro().get_pressure();
+tmp = (uint32_t)(press); // abs press
+memcpy(tmp_ptr,&tmp,sizeof(tmp));
+tmp_ptr += sizeof(tmp);
+press = AP::airspeed()->get_differential_pressure();
+tmp = (int32_t)(press*10.0); //diff pess
+memcpy(tmp_ptr,&tmp,sizeof(tmp));
+tmp_ptr += sizeof(tmp);
 
-uint8_t send_packet[] = {0xAA,0x55,0x01,0x62,0x0F,0x00,0x02,0x02,0x12,0xB9,0x0B,0x04,0x29,0x10,0x27,0xB0,0x01};
+uint16_t tmp_crc = crc_sum_of_bytes_16(packet+2, (tmp_ptr-packet)-2); //-0xaa55
+memcpy(tmp_ptr,&tmp_crc,sizeof(tmp_crc)); //sum
+tmp_ptr += sizeof(tmp_crc);
 
-//memcpy(packet,send_packet,sizeof(send_packet));
-uart->write(send_packet, sizeof(send_packet));
-
-return (uint16_t)sizeof(send_packet);
-
+uart->write(packet,(tmp_ptr-packet));
+  }
+  div++;
 }
+
 void AP_ExternalAHRS_InertialLabs::write_bytes(const char *bytes, uint8_t len)
 {
     uart->write(reinterpret_cast<const uint8_t *>(bytes), len);
