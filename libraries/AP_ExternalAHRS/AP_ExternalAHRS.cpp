@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: External AHRS options
     // @Description: External AHRS options bitmask
-    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.,1:Enable calibration of IL INS,2:Use IL INS baro altitude,3:Use IL INS airspeed and wind estimation,4:Enable transmitt diff pressure to ILab
+    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.,1:Enable calibration of IL INS,2:Use IL INS baro altitude,3:Use IL INS airspeed and wind estimation
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
 
@@ -88,7 +88,6 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),
-    
 
     AP_GROUPEND
 };
@@ -290,7 +289,14 @@ void AP_ExternalAHRS::write_bytes(const char *bytes, uint8_t len)
     }
 }
 
-bool AP_ExternalAHRS::get_estimate_wind(Vector3f &wind) const       //AVK 11.05.2024
+void AP_ExternalAHRS::handle_command(ExternalAHRS_command command, const ExternalAHRS_command_data &data)
+{
+    if (backend) {
+        backend->handle_command(command, data);
+    }
+}
+
+bool AP_ExternalAHRS::get_estimate_wind(Vector3f &wind) const    //AVK 11.05.2024
 {
     if (backend) {
     return backend->get_wind_estimation(wind);
@@ -298,20 +304,20 @@ bool AP_ExternalAHRS::get_estimate_wind(Vector3f &wind) const       //AVK 11.05.
     return false;
 }
 
-bool AP_ExternalAHRS::get_airspeed(float &tas) const              //AVK 11.05.2024
+bool AP_ExternalAHRS::get_airspeed(float &tas) const            //AVK 11.05.2024
 {
     if (backend) {
     return backend->get_true_airspeed(tas);
        }
     return false;
 }
-bool AP_ExternalAHRS::get_baro_alt(float &tbalt) const          //AVK 11.05.2024 
+bool AP_ExternalAHRS::get_baro_alt(float &tbalt) const          //AVK 11.05.2024
 {
     if (backend) {
     return backend->get_true_baro_alt(tbalt);
        }
     return false;
-}   
+}
 
 void AP_ExternalAHRS::update(void)
 {

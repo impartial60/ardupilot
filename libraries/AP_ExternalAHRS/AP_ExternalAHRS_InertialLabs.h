@@ -39,10 +39,11 @@ public:
     void get_filter_status(nav_filter_status &status) const override;
     void send_status_report(class GCS_MAVLINK &link) const override;
     void write_bytes(const char *bytes, uint8_t len) override;
+    void handle_command(ExternalAHRS_command command, const ExternalAHRS_command_data &data) override;
     bool get_wind_estimation(Vector3f &wind)  override; //AVK 10.05.2024
     bool get_true_airspeed(float &airspeed) override;   //AVK 11.05.2024
     bool get_true_baro_alt(float &baro_alt) override;   //AVK 11.05.2024
- 
+
     // check for new data
     void update() override {
         check_uart();
@@ -85,12 +86,6 @@ public:
         GNSS_ANGLE_POS_TYPE = 0x3A,
         GNSS_HEADING_TIMESTAMP = 0x40,
         GNSS_DOP = 0x42,
-    };
-    enum class Tx_MessageType : uint8_t {
-        //------------------------for tx to ILab------- AVK 15.05.2024
-        AP_PRESSURE = 0x12,
-        AP_POSITION = 0x00,
-        
     };
 
     /*

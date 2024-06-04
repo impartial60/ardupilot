@@ -21,6 +21,7 @@
 #if AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
 
 #include "AP_ExternalAHRS_InertialLabs.h"
+#include "AP_ExternalAHRS_InertialLabs_command.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include <AP_Baro/AP_Baro.h>
@@ -270,7 +271,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::ACCEL_DATA_HR: {
             CHECK_SIZE(u.accel_data_hr);
-            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*9.8106f*1.0e-6; // m/s/s    
+            ins_data.accel = u.accel_data_hr.tofloat().rfu_to_frd()*9.8106f*1.0e-6; // m/s/s
             break;
         }
         case MessageType::GYRO_DATA_HR: {
@@ -389,19 +390,17 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         }
         case MessageType::DIFFERENTIAL_PRESSURE: {
             CHECK_SIZE(u.differential_pressure);
-            airspeed_data.differential_pressure = u.differential_pressure*1.0e-4*100.0; // 100: mbar to Pa
+            airspeed_data.differential_pressure = u.differential_pressure*1.0e-4*100; // 100: mbar to Pa
             break;
         }
         case MessageType::TRUE_AIRSPEED: {
             CHECK_SIZE(u.true_airspeed);
             state2.true_airspeed = u.true_airspeed*0.01; // m/s
- //           airspeed_data.true_airspeed = state2.true_airspeed;//u.true_airspeed*0.01; // m/s AVK 01/05/2024
             break;
         }
         case MessageType::WIND_SPEED: {
             CHECK_SIZE(u.wind_speed);
-            state2.wind_speed        = u.wind_speed.tofloat().rfu_to_frd()*0.01; // m/s
-  //          airspeed_data.wind_speed = state2.wind_speed;//u.wind_speed.tofloat().rfu_to_frd()*0.01; // m/s AVK 01/05/2024
+            state2.wind_speed = u.wind_speed.tofloat().rfu_to_frd()*0.01; // m/s
             break;
         }
         case MessageType::AIR_DATA_STATUS: {
@@ -526,7 +525,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
             }
             last_gps_ms = now_ms;
         }
-        
+
         uint64_t now_us = AP_HAL::micros64();
 
         // @LoggerMessage: ILB4
@@ -595,7 +594,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
                                     nav_ins_data.hdop, nav_ins_data.vdop, gnss_data.tdop);
 
     }
-    
+
     if (GOT_MSG(BARO_DATA) &&
         GOT_MSG(TEMPERATURE)) {
         AP::baro().handle_external(baro_data);
@@ -611,12 +610,12 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: Temp: Temperature
         // @Field: Alt: Baro altitude
         // @Field: TAS: true airspeed
-        // @Field: WVN: Wind velocity north
-        // @Field: WVE: Wind velocity east
-        // @Field: WVD: Wind velocity down
+        // @Field: VWN: Wind velocity north
+        // @Field: VWE: Wind velocity east
+        // @Field: VWD: Wind velocity down
         // @Field: ADU: Air Data Unit status
 
-        AP::logger().WriteStreaming("ILB3", "TimeUS,GMS,Press,Diff,Temp,Alt,TAS,WVN,WVE,WVD,ADU",
+        AP::logger().WriteStreaming("ILB3", "TimeUS,GMS,Press,Diff,Temp,Alt,TAS,VWN,VWE,VWD,ADU",
                                     "s-PPOmnnnn-",
                                     "F----------",
                                     "QIffffffffH",
@@ -685,7 +684,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         // @Field: Lng: longitude
         // @Field: Alt: altitude MSL
         // @Field: USW: USW1
-        // @Field: USW2: USW2  
+        // @Field: USW2: USW2
         // @Field: Vdc: Supply voltage
 
         AP::logger().WriteStreaming("ILB7", "TimeUS,GMS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lng,Alt,USW,USW2,Vdc",
@@ -723,7 +722,10 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
     uint32_t now_usw = AP_HAL::millis();
 
     // InertialLabs critical messages to GCS (sending messages once every 10 seconds)
-    if (now_usw - last_critical_msg_ms > dt_critical_usw) {
+    if ((last_unit_status != state2.unit_status) ||
+        (last_unit_status2 != state2.unit_status2) ||
+        (last_air_data_status != state2.air_data_status) ||
+        (now_usw - last_critical_msg_ms > dt_critical_usw)) {
         // Critical USW message
         if (state2.unit_status & ILABS_UNIT_STATUS_ALIGNMENT_FAIL) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ILAB: Unsuccessful initial alignment");
@@ -965,7 +967,7 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 
     // InertialLabs INS spoofing detection messages to GCS
     if (last_spoof_status != gnss_data.spoof_status) {
-        if (gnss_data.spoof_status == 1 && (last_spoof_status == 2 || last_spoof_status == 3)) {
+        if ((last_spoof_status == 2 || last_spoof_status == 3) && (gnss_data.spoof_status == 1)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS no spoofing");
         }
 
@@ -982,12 +984,8 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
 
     // InertialLabs INS jamming detection messages to GCS
     if (last_jam_status != gnss_data.jam_status) {
-        if (gnss_data.jam_status == 1 && (last_jam_status == 2 || last_jam_status == 3)) {
+        if ((last_jam_status == 2 || last_jam_status == 3) && (gnss_data.jam_status == 1)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ILAB: GNSS no jamming");
-        }
-
-        if (gnss_data.jam_status == 2) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: GNSS jamming indicated but fix ok");
         }
 
         if (gnss_data.jam_status == 3) {
@@ -1094,21 +1092,21 @@ bool AP_ExternalAHRS_InertialLabs::get_wind_estimation(Vector3f &wind)  //AVK 10
 {
      if(option_is_set(AP_ExternalAHRS::OPTIONS::ILAB_USE_AIRSPEED))     //AVK 09.05.2024
         {wind =  state2.wind_speed; return true;}
-      
+
     return false;
 }
 bool AP_ExternalAHRS_InertialLabs::get_true_airspeed(float &airspeed)   //AVK 11.05.2024
 {
      if(option_is_set(AP_ExternalAHRS::OPTIONS::ILAB_USE_AIRSPEED))     //AVK 11.05.2024
         {airspeed =  state2.true_airspeed; return true;}
-      
+
     return false;
 }
 bool AP_ExternalAHRS_InertialLabs::get_true_baro_alt(float &baro_alt)    //AVK 11.05.2024
 {
      if(option_is_set(AP_ExternalAHRS::OPTIONS::ILAB_USE_BARO_ALT))      //AVK 11.05.2024
         {baro_alt =  state2.baro_alt; return true;}
-      
+
     return false;
 }
 
@@ -1152,50 +1150,60 @@ void AP_ExternalAHRS_InertialLabs::send_status_report(GCS_MAVLINK &link) const
     if (!filterStatus.flags.initalized) {
         flags |= EKF_UNINITIALIZED;
     }
-    
+
     mavlink_msg_ekf_status_report_send(link.get_chan(), flags, 0, 0, 0, 0, 0, 0);
-}
-
-
-void AP_ExternalAHRS_InertialLabs::make_tx_packet(uint8_t *packet) const //AVK 28.05.2024
-{
-    static int div = 0;
-uint8_t *tmp_ptr = packet;
-uint8_t hdr[] = {0xAA,0x55,0x01,0x62}; //packet header
-uint32_t tmp;
-float press ;
-uint16_t len_packet = 4/*header*/ + 2/*length packet*/ + 1/*num meass*/ + 1/*type*/ + \
-                    sizeof(uint32_t/*absolute pressure*/) + \
-                    sizeof(int32_t)/*differential pressure*/ + \
-                    sizeof(uint16_t)/*KS*/;
-  if(!(div & 3)) {       // 200 hz / 4 = 50 hz send packet to ILab     
-memcpy(tmp_ptr,hdr,sizeof(hdr)); // header
-tmp_ptr += sizeof(hdr);
-memcpy(tmp_ptr,&len_packet,sizeof(len_packet));
-tmp_ptr += sizeof(len_packet);
-*tmp_ptr++ = 0x01;
-*tmp_ptr++ = 0x12;
-press = AP::baro().get_pressure();
-tmp = (uint32_t)(press); // abs press
-memcpy(tmp_ptr,&tmp,sizeof(tmp));
-tmp_ptr += sizeof(tmp);
-press = AP::airspeed()->get_differential_pressure();
-tmp = (int32_t)(press*10.0); //diff pess
-memcpy(tmp_ptr,&tmp,sizeof(tmp));
-tmp_ptr += sizeof(tmp);
-
-uint16_t tmp_crc = crc_sum_of_bytes_16(packet+2, (tmp_ptr-packet)-2); //-0xaa55
-memcpy(tmp_ptr,&tmp_crc,sizeof(tmp_crc)); //sum
-tmp_ptr += sizeof(tmp_crc);
-
-uart->write(packet,(tmp_ptr-packet));
-  }
-  div++;
 }
 
 void AP_ExternalAHRS_InertialLabs::write_bytes(const char *bytes, uint8_t len)
 {
     uart->write(reinterpret_cast<const uint8_t *>(bytes), len);
+}
+
+void AP_ExternalAHRS_InertialLabs::handle_command(ExternalAHRS_command command, const ExternalAHRS_command_data &data)
+{
+    switch (command) {
+        case ExternalAHRS_command::START_UDD:
+            write_bytes(InertialLabs::Command::START_UDD,
+                        sizeof(InertialLabs::Command::START_UDD) - 1);
+            break;
+        case ExternalAHRS_command::STOP:
+            write_bytes(InertialLabs::Command::STOP,
+                        sizeof(InertialLabs::Command::STOP) - 1);
+            break;
+        case ExternalAHRS_command::ENABLE_GNSS:
+            write_bytes(InertialLabs::Command::ENABLE_GNSS,
+                        sizeof(InertialLabs::Command::ENABLE_GNSS) - 1);
+            break;
+        case ExternalAHRS_command::DISABLE_GNSS:
+            write_bytes(InertialLabs::Command::DISABLE_GNSS,
+                        sizeof(InertialLabs::Command::DISABLE_GNSS) - 1);
+            break;
+        case ExternalAHRS_command::START_VG3D_CALIBRATION_IN_FLIGHT:
+            write_bytes(InertialLabs::Command::START_VG3DCLB_FLIGHT,
+                        sizeof(InertialLabs::Command::START_VG3DCLB_FLIGHT) - 1);
+            break;
+        case ExternalAHRS_command::STOP_VG3D_CALIBRATION_IN_FLIGHT:
+            write_bytes(InertialLabs::Command::STOP_VG3DCLB_FLIGHT,
+                        sizeof(InertialLabs::Command::STOP_VG3DCLB_FLIGHT) - 1);
+            break;
+        case ExternalAHRS_command::AIDING_DATA_EXTERNAL_POSITION:
+        case ExternalAHRS_command::AIDING_DATA_EXTERNAL_HORIZONTAL_POSITION:
+        case ExternalAHRS_command::AIDING_DATA_EXTERNAL_ALTITUDE:
+        case ExternalAHRS_command::AIDING_DATA_WIND:
+        case ExternalAHRS_command::AIDING_DATA_AMBIENT_AIR:
+        case ExternalAHRS_command::AIDING_DATA_EXTERNAL_HEADING:
+        {
+            InertialLabs::Data_context context;
+            InertialLabs::fill_command_pyload(context, command, data);
+            InertialLabs::fill_transport_protocol_data(context);
+            AP::externalAHRS().write_bytes(reinterpret_cast<const char *>(context.data), context.length);
+            break;
+        }
+
+        default:
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ILAB: Invalid command for handling");
+    }
+
 }
 
 #endif  // AP_EXTERNAL_AHRS_INERTIAL_LABS_ENABLED
