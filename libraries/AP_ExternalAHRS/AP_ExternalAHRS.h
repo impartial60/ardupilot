@@ -123,7 +123,9 @@ public:
     void write_bytes(const char *bytes, uint8_t len);
     bool get_estimate_wind(Vector3f &wind) const;       //AVK 11.05.2024
     bool get_airspeed(float &tas) const;                //AVK 11.05.2024
-    bool get_baro_alt(float &tbalt) const;              //AVK 11.05.2024    
+    bool get_baro_alt(float &tbalt) const;              //AVK 11.05.2024   
+
+   // void handle_command(ExternalAHRS_command command, const ExternalAHRS_command_data &data); 
 
     // update backend
     void update();
