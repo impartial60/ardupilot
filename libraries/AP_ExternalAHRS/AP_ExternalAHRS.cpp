@@ -289,12 +289,12 @@ void AP_ExternalAHRS::write_bytes(const char *bytes, uint8_t len)
     }
 }
 
-/*void AP_ExternalAHRS::handle_command(ExternalAHRS_command command, const ExternalAHRS_command_data &data)
+void AP_ExternalAHRS::handle_command(ExternalAHRS_command command, const ExternalAHRS_command_data &data)
 {
     if (backend) {
         backend->handle_command(command, data);
     }
-}*/
+}
 
 bool AP_ExternalAHRS::get_estimate_wind(Vector3f &wind) const    //AVK 11.05.2024
 {
