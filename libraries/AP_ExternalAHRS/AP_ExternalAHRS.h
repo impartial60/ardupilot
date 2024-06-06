@@ -121,16 +121,9 @@ public:
     bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
     void write_bytes(const char *bytes, uint8_t len);
-<<<<<<< HEAD
     bool get_estimate_wind(Vector3f &wind) const;       //AVK 11.05.2024
     bool get_airspeed(float &tas) const;                //AVK 11.05.2024
     bool get_baro_alt(float &tbalt) const;              //AVK 11.05.2024    
-=======
-    void handle_command(ExternalAHRS_command command, const ExternalAHRS_command_data &data);
-    bool get_estimate_wind(Vector3f &wind) const;       //AVK 11.05.2024
-    bool get_airspeed(float &tas) const;                //AVK 11.05.2024
-    bool get_baro_alt(float &tbalt) const;              //AVK 11.05.2024
->>>>>>> 3f4d3607bc4e399addd62bcb55434129604e4d69
 
     // update backend
     void update();
@@ -185,26 +178,17 @@ public:
         gnss_is_disabled = disable;
     }
 
-<<<<<<< HEAD
 //protected: //AVK 09.5.2024 why is protected ????????
 
-=======
->>>>>>> 3f4d3607bc4e399addd62bcb55434129604e4d69
     enum class OPTIONS {
         VN_UNCOMP_IMU = (1U << 0),
         ILAB_ENABLE_CLB = (1U << 1), // Enable InertialLabs INS compass, accelerometer and gyro calibration
         ILAB_USE_BARO_ALT = (1U << 2), // Use InertialLabs INS baro altitude and vertical velocity instead of calculated by Ardupilot
         ILAB_USE_AIRSPEED = (1U << 3), // Use InertialLabs INS airspeed and wind estimation instead of calculated by Ardupilot
-<<<<<<< HEAD
         ILAB_trans_diff_pressure = (1U << 4), // AVK 15.05.2024 Enable send diff_pressure to ILab   
     };
 
 protected: //AVK 09.5.2024 why is protected ????????  
-=======
-    };
-
-protected:
->>>>>>> 3f4d3607bc4e399addd62bcb55434129604e4d69
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 
 private:
