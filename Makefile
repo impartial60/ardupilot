@@ -28,7 +28,7 @@ $(VEHICLES): $(WAF_BINARY)
 	@$(WAF) $@
 
 .DEFAULT: %-configure
-	@$(WAF) configure --board $@ --debug build 
+	@$(WAF) configure --board $@  build 
 
 define target_template
 $(1)-$(2) : $(1)-configure $(2)
