@@ -1161,7 +1161,7 @@ uint8_t *tmp_ptr = packet;
 uint8_t hdr[] = {0xAA,0x55,0x01,0x62}; //packet header
 uint32_t tmp;
 float press ;
-uint16_t len_packet = 4/*header*/ + 2/*length packet*/ + 1/*num meass*/ + 1/*type*/ + \
+uint16_t len_packet = 2/*header*/ + 2/*length packet*/ + 1/*num meass*/ + 1/*type*/ + \
                     sizeof(uint32_t/*absolute pressure*/) + \
                     sizeof(int32_t)/*differential pressure*/ + \
                     sizeof(uint16_t)/*KS*/;

@@ -1,0 +1,41 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../../cuda-samples/Samples"
+		}
+	],
+	"settings": {
+		"cortex-debug.variableUseNaturalFormat": false,
+		"files.associations": {
+			"*.ipp": "cpp",
+			"any": "cpp",
+			"*.tcc": "cpp",
+			"bitset": "cpp",
+			"optional": "cpp",
+			"functional": "cpp",
+			"random": "cpp",
+			"fstream": "cpp",
+			"future": "cpp",
+			"istream": "cpp",
+			"mutex": "cpp",
+			"ostream": "cpp",
+			"sstream": "cpp",
+			"stop_token": "cpp",
+			"streambuf": "cpp",
+			"regex": "cpp",
+			"exception": "cpp",
+			"memory_resource": "cpp",
+			"iosfwd": "cpp",
+			"new": "cpp",
+			"hal_flash.h": "c",
+			"cmath": "cpp",
+			"string": "cpp",
+			"array": "cpp",
+			"string_view": "cpp",
+			"iomanip": "cpp"
+		}
+	}
+}
