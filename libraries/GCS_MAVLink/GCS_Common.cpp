@@ -4177,8 +4177,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #endif
 
 #if AP_GPS_ENABLED
+    case MAVLINK_MSG_ID_GPS_INPUT:// AVK 07.20.2024
+    
+    break;
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-    case MAVLINK_MSG_ID_GPS_INPUT:
+  //  case MAVLINK_MSG_ID_GPS_INPUT: // AVK 07.20.2024
     case MAVLINK_MSG_ID_HIL_GPS:
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         AP::gps().handle_msg(chan, msg);
