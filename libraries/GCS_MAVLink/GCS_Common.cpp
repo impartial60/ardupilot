@@ -4178,7 +4178,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
 #if AP_GPS_ENABLED
     case MAVLINK_MSG_ID_GPS_INPUT:// AVK 07.20.2024
-    
+        ExternalAHRS_command_data data;
+        data.x = mavlink_msg_gps_input_get_lat(&msg);
+        data.y = mavlink_msg_gps_input_get_lon(&msg);
+        data.param1=0.;data.param2=0.;data.param3=0.;data.param4=0.; data.z = 0.;
+        AP::externalAHRS().handle_command(ExternalAHRS_command::AIDING_DATA_EXTERNAL_HORIZONTAL_POSITION,data);
     break;
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
   //  case MAVLINK_MSG_ID_GPS_INPUT: // AVK 07.20.2024
